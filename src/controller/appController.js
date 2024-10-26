@@ -45,7 +45,7 @@ const createTask = async ( req, res ) => {
             createdBy: userID,
             taskName: req.body?.title,
             priority: req.body?.priority,
-            status: req.body?.status,
+            status: "TODO",
             dueDate: new Date()
 
         } )
@@ -145,6 +145,9 @@ const addEmail = async ( req, res ) => {
 }
 
 
+
+
+
 const getTask = async ( req, res ) => {
     try {
         let token = req.headers['authorization'];
@@ -164,34 +167,62 @@ const getTask = async ( req, res ) => {
 
         console.log( userID )
 
-        const existingTask = await TaskModel.findOne( { userID } )
+        const existingUser = await UserModel.findOne( { userID } )
 
 
-        await newTask.save()
+        let todoList = []
+        let backLogList = []
+        let inProgressList = []
+        let doneList = []
+
+        const taskList = await UserTaskModel.find( { email: existingUser?.email } )
 
 
-        let totalCheckLictCreated = 0
+        console.log( taskList )
 
-        await req?.body.checklist?.map( async ( eachChecklist ) => {
-            let newCheckList = new CheckListModel( {
-                taskID: newTask?.taskID,
-                checkListID: randomUUID(),
-                isDone: eachChecklist?.isDone,
-                title: eachChecklist?.title
-            } )
-            totalCheckLictCreated += 1
 
-            await newCheckList.save()
+        for ( let i = 0; i < taskList.length; i++ ) {
+            let eachTask = taskList[i]
+            let taskDetails = await TaskModel.findOne( { taskID: eachTask?.taskID } )
+            let checkList = await CheckListModel.find( { taskID: eachTask?.taskID } )
 
-        } )
+            console.log( taskDetails )
+
+            let newTaskDetails = {
+                taskID: taskDetails.taskID,
+                createdBy: taskDetails.createdBy,
+                taskName: taskDetails.taskName,
+                priority: taskDetails.priority,
+                status: taskDetails.status,
+                dueDate: taskDetails.dueDate,
+                createdOn: taskDetails.createdOn,
+                checkList: checkList
+            }
+
+            if ( newTaskDetails?.dueDate && new Date( newTaskDetails?.dueDate ) > new Date() ) {
+                newTaskDetails.status = "BACKLOG"
+                backLogList.push( newTaskDetails )
+            } else if ( newTaskDetails?.status == "TODO" ) {
+                todoList.push( newTaskDetails )
+            } else if ( newTaskDetails?.status == "IN-PROGRESS" ) {
+                inProgressList.push( newTaskDetails )
+            } else if ( newTaskDetails?.status == "DONE" ) {
+                doneList.push( newTaskDetails )
+            }
+        }
+
 
 
 
 
         return res.status( 200 ).json( {
-            message: "Task Created",
-            task: newTask,
-            totalCheckLictCreated: totalCheckLictCreated
+            message: "Data Fetched Successfully",
+            task: {
+                todo: todoList,
+                backLog: backLogList,
+                inProgress: inProgressList,
+                done: doneList
+            }
         } )
 
     } catch ( error ) {
@@ -205,5 +236,6 @@ const getTask = async ( req, res ) => {
 
 module.exports = {
     createTask,
-    addEmail
+    addEmail,
+    getTask
 }
