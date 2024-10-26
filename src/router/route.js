@@ -9,6 +9,8 @@ const {
 } = require( '../controller/authController.js' )
 const {
     createTask,
+    addEmail,
+    getTask
     updateTask,
     addEmail
 
@@ -26,6 +28,7 @@ authRouter.post( '/login', login );
 authRouter.post( '/createTask', createTask );
 authRouter.post( '/updateTask', updateTask );
 authRouter.post( '/addEmail', addEmail );
+authRouter.post( '/getTask', getTask );
 
 
 
