@@ -317,5 +317,6 @@ const getTask = async ( req, res ) => {
 module.exports = {
     createTask,
     addEmail,
-    getTask
+    getTask,
+    updateTask
 }

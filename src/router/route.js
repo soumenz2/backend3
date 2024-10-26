@@ -10,9 +10,8 @@ const {
 const {
     createTask,
     addEmail,
-    getTask
+    getTask,
     updateTask,
-    addEmail
 
 } = require( '../controller/appController.js' )
 
