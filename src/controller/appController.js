@@ -39,6 +39,7 @@ const createTask = async ( req, res ) => {
         const existingUser = await UserModel.findOne( { userID } )
 
 
+        console.log( req.body?.date )
 
         const newTask = new TaskModel( {
             taskID: randomUUID(),
@@ -46,7 +47,7 @@ const createTask = async ( req, res ) => {
             taskName: req.body?.title,
             priority: req.body?.priority,
             status: "TODO",
-            dueDate: new Date()
+            dueDate: req.body?.date ? new Date( req.body?.date ) : null
 
         } )
 
@@ -88,27 +89,27 @@ const createTask = async ( req, res ) => {
     }
 }
 
-const updateTask = async (req, res) => {
+const updateTask = async ( req, res ) => {
     try {
         let token = req.headers['authorization'];
-        if (!token) {
-            return res.status(403).json({ message: 'No token provided' });
+        if ( !token ) {
+            return res.status( 403 ).json( { message: 'No token provided' } );
         }
-        token = token.split(' ')[1];
+        token = token.split( ' ' )[1];
 
         let userID = null;
-        jwt.verify(token, config.secret, (err, decoded) => {
-            if (err) {
-                return res.status(401).json({ message: 'Invalid token' });
+        jwt.verify( token, config.secret, ( err, decoded ) => {
+            if ( err ) {
+                return res.status( 401 ).json( { message: 'Invalid token' } );
             }
             userID = decoded?._id;
-        });
+        } );
 
         const { taskID, title,  checklist} = req.body;
 
-        const task = await TaskModel.findOne({ taskID, createdBy: userID });
-        if (!task) {
-            return res.status(404).json({ message: 'Task not found' });
+        const task = await TaskModel.findOne( { taskID, createdBy: userID } );
+        if ( !task ) {
+            return res.status( 404 ).json( { message: 'Task not found' } );
         }
 
         // Update task properties
@@ -120,7 +121,7 @@ const updateTask = async (req, res) => {
         await task.save();
 
         // Handle checklist updates
-        const existingChecklists = await CheckListModel.find({ taskID: taskID });
+        const existingChecklists = await CheckListModel.find( { taskID: taskID } );
         let totalChecklistUpdated = 0;
 
         
@@ -139,21 +140,21 @@ const updateTask = async (req, res) => {
 
         const checklistIDs = checklist.map((item) => item.checkListID);
         const toDelete = existingChecklists.filter(
-            (item) => !checklistIDs.includes(item.checkListID)
+            ( item ) => !checklistIDs.includes( item.checkListID )
         );
-        for (let item of toDelete) {
-            await CheckListModel.findByIdAndDelete(item._id);
+        for ( let item of toDelete ) {
+            await CheckListModel.findByIdAndDelete( item._id );
         }
 
-        return res.status(200).json({
+        return res.status( 200 ).json( {
             message: "Task Updated",
             task,
             totalChecklistUpdated,
-        });
+        } );
 
-    } catch (error) {
-        console.error('Error updating task:', error);
-        return res.status(400).json({ message: 'Internal error', error: JSON.stringify(error) });
+    } catch ( error ) {
+        console.error( 'Error updating task:', error );
+        return res.status( 400 ).json( { message: 'Internal error', error: JSON.stringify( error ) } );
     }
 };
 
@@ -242,18 +243,87 @@ const getTask = async ( req, res ) => {
         let inProgressList = []
         let doneList = []
 
+
+
+
         const taskList = await UserTaskModel.find( { email: existingUser?.email } )
 
 
         console.log( taskList )
 
 
+
+
+        const startOfWeek = new Date();
+        startOfWeek.setHours( 0, 0, 0, 0 );
+        startOfWeek.setDate( startOfWeek.getDate() - startOfWeek.getDay() );
+
+        const endOfWeek = new Date();
+        endOfWeek.setHours( 23, 59, 59, 999 );
+        endOfWeek.setDate( startOfWeek.getDate() + 6 );
+
+        const startOfMonth = new Date();
+        startOfMonth.setDate( 1 );
+        startOfMonth.setHours( 0, 0, 0, 0 );
+
+        const endOfMonth = new Date( startOfMonth );
+        endOfMonth.setMonth( startOfMonth.getMonth() + 1 );
+        endOfMonth.setDate( 0 );
+        endOfMonth.setHours( 23, 59, 59, 999 );
+
+        const startOfDay = new Date();
+        startOfDay.setHours( 0, 0, 0, 0 );
+
+        const endOfDay = new Date();
+        endOfDay.setHours( 23, 59, 59, 999 );
+
+
+
+
+        console.log( "startOfWeek = " + startOfWeek + " endOfWeek = " + endOfWeek )
+        console.log( "startOfMonth = " + startOfMonth + " endOfMonth = " + endOfMonth )
+        console.log( "startOfDay = " + startOfDay + " endOfDay = " + endOfDay )
+
+
         for ( let i = 0; i < taskList.length; i++ ) {
             let eachTask = taskList[i]
-            let taskDetails = await TaskModel.findOne( { taskID: eachTask?.taskID } )
+            let taskDetails = null;
+
+            if ( req.body?.filter == "TODAY" ) {
+                taskDetails = await TaskModel.findOne( {
+                    taskID: eachTask?.taskID, dueDate: {
+                        $gte: startOfDay,
+                        $lte: endOfDay,
+                    }
+                } )
+            } else if ( req.body?.filter == "MONTH" ) {
+                taskDetails = await TaskModel.findOne( {
+                    taskID: eachTask?.taskID, dueDate: {
+                        $gte: startOfMonth,
+                        $lte: endOfMonth,
+                    }
+                } )
+
+            } else if ( req.body?.filter == "WEEK" ) {
+
+                taskDetails = await TaskModel.findOne( {
+                    taskID: eachTask?.taskID, dueDate: {
+                        $gte: startOfWeek,
+                        $lte: endOfWeek,
+                    }
+                } )
+            } else {
+                taskDetails = await TaskModel.findOne( {
+                    taskID: eachTask?.taskID
+                } )
+            }
+
+
+            if ( taskDetails == null ) {
+                continue;
+            }
             let checkList = await CheckListModel.find( { taskID: eachTask?.taskID } )
 
-            console.log( taskDetails )
 
             let newTaskDetails = {
                 taskID: taskDetails.taskID,
@@ -266,8 +336,10 @@ const getTask = async ( req, res ) => {
                 checkList: checkList
             }
 
-            if ( newTaskDetails?.dueDate && new Date( newTaskDetails?.dueDate ) > new Date() ) {
+            if ( newTaskDetails?.dueDate && new Date( newTaskDetails?.dueDate ) < new Date() ) {
                 newTaskDetails.status = "BACKLOG"
+                taskDetails.status = "BACKLOG"
+                await taskDetails.save()
                 backLogList.push( newTaskDetails )
             } else if ( newTaskDetails?.status == "TODO" ) {
                 todoList.push( newTaskDetails )
@@ -277,11 +349,6 @@ const getTask = async ( req, res ) => {
                 doneList.push( newTaskDetails )
             }
         }
-
-
-
-
-
         return res.status( 200 ).json( {
             message: "Data Fetched Successfully",
             task: {
@@ -300,10 +367,88 @@ const getTask = async ( req, res ) => {
 
 
 
+const getEmail = async ( req, res ) => {
+    try {
+        let token = req.headers['authorization'];
+        if ( !token ) {
+            return res.status( 403 ).json( { message: 'No token provided' } );
+        }
+        token = token?.split( ' ' )[1]
+
+        let userID = null
+        jwt.verify( token, config.secret, ( err, decoded ) => {
+            if ( err ) {
+                return res.status( 401 ).json( { message: 'Invalid token' } );
+            }
+            userID = decoded?._id;
+        } );
+
+
+        console.log( userID )
+
+        const emailListAddedByUser = await UserAddEmailModel.find( { userID } )
+
+        return res.status( 200 ).json( {
+            message: "Data Fetched Successfully",
+            email: emailListAddedByUser
+        } )
+
+    } catch ( error ) {
+        console.log( error )
+        return res.status( 400 ).json( { message: 'Internal error', error: JSON.stringify( error ) } );
+    }
+}
+
+
+const assignTask = async ( req, res ) => {
+    try {
+        let token = req.headers['authorization'];
+        if ( !token ) {
+            return res.status( 403 ).json( { message: 'No token provided' } );
+        }
+        token = token?.split( ' ' )[1]
+
+        let userID = null
+        jwt.verify( token, config.secret, ( err, decoded ) => {
+            if ( err ) {
+                return res.status( 401 ).json( { message: 'Invalid token' } );
+            }
+            userID = decoded?._id;
+        } );
+
+
+        console.log( userID )
+
+        const newUserTask = new UserTaskModel( {
+            email: req?.body?.email,
+            taskID: req?.body?.taskID
+        } )
+
+        await newUserTask.save()
+
+
+
+        return res.status( 200 ).json( {
+            message: "Task Assigned Successfully"
+        } )
+
+
+
+
+    } catch ( error ) {
+        console.log( error )
+        return res.status( 400 ).json( { message: 'Internal error', error: JSON.stringify( error ) } );
+    }
+}
+
+
+
 
 module.exports = {
     createTask,
     addEmail,
     getTask,
+    getEmail,
+    assignTask,
     updateTask
 }
