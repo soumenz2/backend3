@@ -104,7 +104,7 @@ const updateTask = async (req, res) => {
             userID = decoded?._id;
         });
 
-        const { taskID, title, status, checklist} = req.body;
+        const { taskID, title,  checklist} = req.body;
 
         const task = await TaskModel.findOne({ taskID, createdBy: userID });
         if (!task) {
@@ -114,8 +114,8 @@ const updateTask = async (req, res) => {
         // Update task properties
         task.taskName = title || task.taskName;
         task.priority ;
-        task.status = status || task.status;
-        task.dueDate = dueDate ? new Date(dueDate) : task.dueDate;
+        task.status ;
+        task.dueDate = dueDate ? new Date() : task.dueDate;
 
         await task.save();
 
@@ -123,33 +123,20 @@ const updateTask = async (req, res) => {
         const existingChecklists = await CheckListModel.find({ taskID: taskID });
         let totalChecklistUpdated = 0;
 
-        // Update, delete or add new checklist items
-        for (let eachChecklist of checklist) {
-            if (eachChecklist.checkListID) {
-                // Update existing checklist item
-                const checklistItem = existingChecklists.find(
-                    (item) => item.checkListID === eachChecklist.checkListID
-                );
-                if (checklistItem) {
-                    checklistItem.title = eachChecklist.title;
-                    checklistItem.isDone = eachChecklist.isDone;
-                    await checklistItem.save();
-                    totalChecklistUpdated++;
-                }
-            } else {
-                // Add new checklist item
-                const newChecklistItem = new CheckListModel({
-                    taskID: taskID,
-                    checkListID: randomUUID(),
-                    title: eachChecklist.title,
-                    isDone: eachChecklist.isDone,
-                });
-                await newChecklistItem.save();
-                totalChecklistUpdated++;
-            }
-        }
+        
+        await req?.body.checklist?.map( async ( eachChecklist ) => {
+            let newCheckList = new CheckListModel( {
+                taskID: newTask?.taskID,
+                checkListID: randomUUID(),
+                isDone: eachChecklist?.isDone,
+                title: eachChecklist?.title
+            } )
+            totalCheckLictCreated += 1
 
-        // Remove deleted checklist items
+            await newCheckList.save()
+
+        } )
+
         const checklistIDs = checklist.map((item) => item.checkListID);
         const toDelete = existingChecklists.filter(
             (item) => !checklistIDs.includes(item.checkListID)
