@@ -9,6 +9,7 @@ const {
 } = require( '../controller/authController.js' )
 const {
     createTask,
+    updateTask,
     addEmail
 
 } = require( '../controller/appController.js' )
@@ -23,6 +24,7 @@ const authRouter = Router();
 authRouter.post( '/signup', validateUser, signup );
 authRouter.post( '/login', login );
 authRouter.post( '/createTask', createTask );
+authRouter.post( '/updateTask', updateTask );
 authRouter.post( '/addEmail', addEmail );
 
 

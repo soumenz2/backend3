@@ -88,7 +88,87 @@ const createTask = async ( req, res ) => {
     }
 }
 
+const updateTask = async (req, res) => {
+    try {
+        let token = req.headers['authorization'];
+        if (!token) {
+            return res.status(403).json({ message: 'No token provided' });
+        }
+        token = token.split(' ')[1];
 
+        let userID = null;
+        jwt.verify(token, config.secret, (err, decoded) => {
+            if (err) {
+                return res.status(401).json({ message: 'Invalid token' });
+            }
+            userID = decoded?._id;
+        });
+
+        const { taskID, title, status, checklist} = req.body;
+
+        const task = await TaskModel.findOne({ taskID, createdBy: userID });
+        if (!task) {
+            return res.status(404).json({ message: 'Task not found' });
+        }
+
+        // Update task properties
+        task.taskName = title || task.taskName;
+        task.priority ;
+        task.status = status || task.status;
+        task.dueDate = dueDate ? new Date(dueDate) : task.dueDate;
+
+        await task.save();
+
+        // Handle checklist updates
+        const existingChecklists = await CheckListModel.find({ taskID: taskID });
+        let totalChecklistUpdated = 0;
+
+        // Update, delete or add new checklist items
+        for (let eachChecklist of checklist) {
+            if (eachChecklist.checkListID) {
+                // Update existing checklist item
+                const checklistItem = existingChecklists.find(
+                    (item) => item.checkListID === eachChecklist.checkListID
+                );
+                if (checklistItem) {
+                    checklistItem.title = eachChecklist.title;
+                    checklistItem.isDone = eachChecklist.isDone;
+                    await checklistItem.save();
+                    totalChecklistUpdated++;
+                }
+            } else {
+                // Add new checklist item
+                const newChecklistItem = new CheckListModel({
+                    taskID: taskID,
+                    checkListID: randomUUID(),
+                    title: eachChecklist.title,
+                    isDone: eachChecklist.isDone,
+                });
+                await newChecklistItem.save();
+                totalChecklistUpdated++;
+            }
+        }
+
+        // Remove deleted checklist items
+        const checklistIDs = checklist.map((item) => item.checkListID);
+        const toDelete = existingChecklists.filter(
+            (item) => !checklistIDs.includes(item.checkListID)
+        );
+        for (let item of toDelete) {
+            await CheckListModel.findByIdAndDelete(item._id);
+        }
+
+        return res.status(200).json({
+            message: "Task Updated",
+            task,
+            totalChecklistUpdated,
+        });
+
+    } catch (error) {
+        console.error('Error updating task:', error);
+        return res.status(400).json({ message: 'Internal error', error: JSON.stringify(error) });
+    }
+};
 
 
 
@@ -205,5 +285,6 @@ const getTask = async ( req, res ) => {
 
 module.exports = {
     createTask,
+    updateTask,
     addEmail
 }
