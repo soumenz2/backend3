@@ -256,18 +256,87 @@ const getTask = async ( req, res ) => {
         let inProgressList = []
         let doneList = []
 
+
+
+
         const taskList = await UserTaskModel.find( { email: existingUser?.email } )
 
 
         console.log( taskList )
 
 
+
+
+        const startOfWeek = new Date();
+        startOfWeek.setHours( 0, 0, 0, 0 );
+        startOfWeek.setDate( startOfWeek.getDate() - startOfWeek.getDay() );
+
+        const endOfWeek = new Date();
+        endOfWeek.setHours( 23, 59, 59, 999 );
+        endOfWeek.setDate( startOfWeek.getDate() + 6 );
+
+        const startOfMonth = new Date();
+        startOfMonth.setDate( 1 );
+        startOfMonth.setHours( 0, 0, 0, 0 );
+
+        const endOfMonth = new Date( startOfMonth );
+        endOfMonth.setMonth( startOfMonth.getMonth() + 1 );
+        endOfMonth.setDate( 0 );
+        endOfMonth.setHours( 23, 59, 59, 999 );
+
+        const startOfDay = new Date();
+        startOfDay.setHours( 0, 0, 0, 0 );
+
+        const endOfDay = new Date();
+        endOfDay.setHours( 23, 59, 59, 999 );
+
+
+
+
+        console.log( "startOfWeek = " + startOfWeek + " endOfWeek = " + endOfWeek )
+        console.log( "startOfMonth = " + startOfMonth + " endOfMonth = " + endOfMonth )
+        console.log( "startOfDay = " + startOfDay + " endOfDay = " + endOfDay )
+
+
         for ( let i = 0; i < taskList.length; i++ ) {
             let eachTask = taskList[i]
-            let taskDetails = await TaskModel.findOne( { taskID: eachTask?.taskID } )
+            let taskDetails = null;
+
+            if ( req.body?.filter == "TODAY" ) {
+                taskDetails = await TaskModel.findOne( {
+                    taskID: eachTask?.taskID, dueDate: {
+                        $gte: startOfDay,
+                        $lte: endOfDay,
+                    }
+                } )
+            } else if ( req.body?.filter == "MONTH" ) {
+                taskDetails = await TaskModel.findOne( {
+                    taskID: eachTask?.taskID, dueDate: {
+                        $gte: startOfMonth,
+                        $lte: endOfMonth,
+                    }
+                } )
+
+            } else if ( req.body?.filter == "WEEK" ) {
+
+                taskDetails = await TaskModel.findOne( {
+                    taskID: eachTask?.taskID, dueDate: {
+                        $gte: startOfWeek,
+                        $lte: endOfWeek,
+                    }
+                } )
+            } else {
+                taskDetails = await TaskModel.findOne( {
+                    taskID: eachTask?.taskID
+                } )
+            }
+
+
+            if ( taskDetails == null ) {
+                continue;
+            }
             let checkList = await CheckListModel.find( { taskID: eachTask?.taskID } )
 
-            console.log( taskDetails )
 
             let newTaskDetails = {
                 taskID: taskDetails.taskID,
@@ -282,7 +351,8 @@ const getTask = async ( req, res ) => {
 
             if ( newTaskDetails?.dueDate && new Date( newTaskDetails?.dueDate ) < new Date() ) {
                 newTaskDetails.status = "BACKLOG"
-                await newTaskDetails.save()
+                taskDetails.status = "BACKLOG"
+                await taskDetails.save()
                 backLogList.push( newTaskDetails )
             } else if ( newTaskDetails?.status == "TODO" ) {
                 todoList.push( newTaskDetails )
