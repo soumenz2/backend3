@@ -71,7 +71,7 @@ const createTask = async ( req, res ) => {
 
 
         const newUserTask = new UserTaskModel( {
-            email: existingUser?.email,
+            email: req.body?.assignee,
             taskID: newTask?.taskID
         } )
 
