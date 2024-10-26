@@ -280,8 +280,9 @@ const getTask = async ( req, res ) => {
                 checkList: checkList
             }
 
-            if ( newTaskDetails?.dueDate && new Date( newTaskDetails?.dueDate ) > new Date() ) {
+            if ( newTaskDetails?.dueDate && new Date( newTaskDetails?.dueDate ) < new Date() ) {
                 newTaskDetails.status = "BACKLOG"
+                await newTaskDetails.save()
                 backLogList.push( newTaskDetails )
             } else if ( newTaskDetails?.status == "TODO" ) {
                 todoList.push( newTaskDetails )
