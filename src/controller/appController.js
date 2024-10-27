@@ -69,12 +69,16 @@ const createTask = async ( req, res ) => {
 
         } )
 
+        const newUserTask1 = new UserTaskModel( {
+            email: existingUser?.email,
+            taskID: newTask?.taskID
+        } )
 
+        await newUserTask1.save()
         const newUserTask = new UserTaskModel( {
             email: req.body?.assignee,
             taskID: newTask?.taskID
         } )
-
         await newUserTask.save()
 
         return res.status( 200 ).json( {
@@ -105,7 +109,7 @@ const updateTask = async ( req, res ) => {
             userID = decoded?._id;
         } );
 
-        const { taskID, title,  checklist} = req.body;
+        const { taskID, title,priority,  checklist} = req.body;
 
         const task = await TaskModel.findOne( { taskID, createdBy: userID } );
         if ( !task ) {
@@ -114,9 +118,9 @@ const updateTask = async ( req, res ) => {
 
         // Update task properties
         task.taskName = title || task.taskName;
-        task.priority ;
+        task.priority=priority || task.priority ;
         task.status ;
-        task.dueDate = dueDate ? new Date() : task.dueDate;
+        task.dueDate 
 
         await task.save();
 
