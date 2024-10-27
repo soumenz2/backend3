@@ -455,7 +455,56 @@ const assignTask = async ( req, res ) => {
         return res.status( 400 ).json( { message: 'Internal error', error: JSON.stringify( error ) } );
     }
 }
-
+const deleteTask = async (req, res) => {
+    try {
+      // Get token from headers
+      let token = req.headers['authorization'];
+      if (!token) {
+        return res.status(403).json({ message: 'No token provided' });
+      }
+      token = token.split(' ')[1];
+  
+      // Verify token and extract userID
+      let userID = null;
+      jwt.verify(token, config.secret, (err, decoded) => {
+        if (err) {
+          return res.status(401).json({ message: 'Invalid token' });
+        }
+        userID = decoded._id;
+      });
+  
+      // Destructure taskID from req.query
+      const { taskID } = req.query;
+      if (!taskID) {
+        return res.status(400).json({ message: 'Task ID is required' });
+      }
+  
+      // Check if the task exists and is created by the user
+      const task = await TaskModel.findOne({ taskID, createdBy: userID });
+      if (!task) {
+        return res.status(404).json({ message: 'Task not found or unauthorized' });
+      }
+  
+      // Delete the task
+      await TaskModel.deleteOne({ taskID });
+  
+      // Delete all checklist items associated with the task
+      const deletedChecklistCount = await CheckListModel.deleteMany({ taskID });
+  
+      // Optionally, delete associated UserTask records
+      await UserTaskModel.deleteMany({ taskID });
+  
+      return res.status(200).json({
+        message: 'Task and associated checklist deleted successfully',
+        deletedChecklistCount: deletedChecklistCount.deletedCount,
+      });
+    } catch (error) {
+      console.log('Delete Task Error:', error);
+      return res.status(500).json({ message: 'An error occurred while deleting the task', error });
+    }
+  };
+  
+  
 
 
 
@@ -465,5 +514,6 @@ module.exports = {
     getTask,
     getEmail,
     assignTask,
-    updateTask
+    updateTask,
+    deleteTask
 }
