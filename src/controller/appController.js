@@ -327,6 +327,21 @@ const getTask = async ( req, res ) => {
                 continue;
             }
             let checkList = await CheckListModel.find( { taskID: eachTask?.taskID } )
+            let statusOptions = [];
+            switch (taskDetails.status) {
+                case "TODO":
+                    statusOptions = ["IN-PROGRESS", "DONE", "BACKLOG"];
+                    break;
+                case "IN-PROGRESS":
+                    statusOptions = ["DONE", "BACKLOG"];
+                    break;
+                case "DONE":
+                    statusOptions = [];
+                    break;
+                case "BACKLOG":
+                    statusOptions = ["TODO", "IN-PROGRESS"];
+                    break;
+            }
 
 
             let newTaskDetails = {
@@ -337,7 +352,8 @@ const getTask = async ( req, res ) => {
                 status: taskDetails.status,
                 dueDate: taskDetails.dueDate,
                 createdOn: taskDetails.createdOn,
-                checkList: checkList
+                checkList: checkList,
+                statusOptions: statusOptions,
             }
 
             if ( newTaskDetails?.dueDate && new Date( newTaskDetails?.dueDate ) < new Date() ) {
