@@ -503,8 +503,6 @@ const deleteTask = async (req, res) => {
       return res.status(500).json({ message: 'An error occurred while deleting the task', error });
     }
   };
-  
-  
 
 
 
@@ -516,4 +514,5 @@ module.exports = {
     assignTask,
     updateTask,
     deleteTask
+    
 }

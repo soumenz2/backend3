@@ -90,10 +90,62 @@ const login = async ( req, res ) => {
     }
 
 }
+const updateUser = async (req, res) => {
+    try {
+      // Extract token from the headers
+      let token = req.headers['authorization'];
+      if (!token) {
+        return res.status(403).json({ message: 'No token provided' });
+      }
+      token = token.split(' ')[1];
+  
+      // Verify token and extract userID
+      let userID = null;
+      jwt.verify(token, config.secret, (err, decoded) => {
+        if (err) {
+          return res.status(401).json({ message: 'Invalid token' });
+        }
+        userID = decoded._id;
+      });
+  
+      // Destructure the fields to be updated from the request body
+      const { username, email, oldPassword, newPassword } = req.body;
+  
+      // Find the user by userID
+      const user = await UserModel.findOne({userID :userID});
+      if (!user) {
+        return res.status(404).json({ message: 'User not found' });
+      }
+  
+      if (username) user.username = username;
+      if (username) user.email = email;
+  
+      // If oldPassword and newPassword are provided, validate and update the password
+      if (oldPassword && newPassword) {
+        const isPasswordValid = await bcrypt.compare(oldPassword, user.password);
+        if (!isPasswordValid) {
+          return res.status(400).json({ message: 'Old password is incorrect' });
+        }
+        user.password = await bcrypt.hash(newPassword, 10); // Hash the new password
+      }
+  
+      await user.save();
+  
+      return res.status(200).json({ message: 'User updated successfully' });
+    } catch (error) {
+      console.error('Update User Error:', error);
+      return res.status(500).json({ message: 'An error occurred while updating user data' });
+    }
+  };
+  
+  
+
+
 
 
 module.exports = {
     signup,
-    login
+    login,
+    updateUser
 
 }
