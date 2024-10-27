@@ -93,75 +93,72 @@ const createTask = async ( req, res ) => {
     }
 }
 
-const updateTask = async ( req, res ) => {
+const updateTask = async (req, res) => {
     try {
         let token = req.headers['authorization'];
-        if ( !token ) {
-            return res.status( 403 ).json( { message: 'No token provided' } );
+        if (!token) {
+            return res.status(403).json({ message: 'No token provided' });
         }
-        token = token.split( ' ' )[1];
+        token = token.split(' ')[1];
 
         let userID = null;
-        jwt.verify( token, config.secret, ( err, decoded ) => {
-            if ( err ) {
-                return res.status( 401 ).json( { message: 'Invalid token' } );
+        jwt.verify(token, config.secret, (err, decoded) => {
+            if (err) {
+                return res.status(401).json({ message: 'Invalid token' });
             }
             userID = decoded?._id;
-        } );
+        });
 
-        const { taskID, title,priority,  checklist} = req.body;
+        console.log(userID);
 
-        const task = await TaskModel.findOne( { taskID, createdBy: userID } );
-        if ( !task ) {
-            return res.status( 404 ).json( { message: 'Task not found' } );
+        // Find the existing task by taskID
+        const existingTask = await TaskModel.findOne({ taskID: req.body.taskID });
+        if (!existingTask) {
+            return res.status(404).json({ message: 'Task not found' });
         }
 
-        // Update task properties
-        task.taskName = title || task.taskName;
-        task.priority=priority || task.priority ;
-        task.status ;
-        task.dueDate 
+        // Update task details (excluding assignee and due date)
+        existingTask.taskName = req.body?.title || existingTask.taskName;
+        existingTask.priority = req.body?.priority || existingTask.priority;
+        // Do not update the due date or assignee here
 
-        await task.save();
+        // Save the updated task
+        await existingTask.save();
 
-        // Handle checklist updates
-        const existingChecklists = await CheckListModel.find( { taskID: taskID } );
-        let totalChecklistUpdated = 0;
+        // Update existing checklists and add new ones
+        let totalCheckListCreated = 0;
 
-        
-        await req?.body.checklist?.map( async ( eachChecklist ) => {
-            let newCheckList = new CheckListModel( {
-                taskID: newTask?.taskID,
-                checkListID: randomUUID(),
-                isDone: eachChecklist?.isDone,
-                title: eachChecklist?.title
-            } )
-            totalCheckLictCreated += 1
-
-            await newCheckList.save()
-
-        } )
-
-        const checklistIDs = checklist.map((item) => item.checkListID);
-        const toDelete = existingChecklists.filter(
-            ( item ) => !checklistIDs.includes( item.checkListID )
-        );
-        for ( let item of toDelete ) {
-            await CheckListModel.findByIdAndDelete( item._id );
+        for (const eachChecklist of req.body.checklist) {
+            if (eachChecklist.checkListID) {
+                // Update existing checklist item
+                await CheckListModel.updateOne(
+                    { checkListID: eachChecklist.checkListID },
+                    { $set: { isDone: eachChecklist.isDone, title: eachChecklist.title } }
+                );
+            } else {
+                // Create a new checklist item if it doesn't have a checkListID
+                const newCheckList = new CheckListModel({
+                    taskID: existingTask.taskID,
+                    checkListID: randomUUID(),
+                    isDone: eachChecklist.isDone || false,
+                    title: eachChecklist.title || 'Untitled Checklist'
+                });
+                await newCheckList.save();
+                totalCheckListCreated += 1;
+            }
         }
 
-        return res.status( 200 ).json( {
+        return res.status(200).json({
             message: "Task Updated",
-            task,
-            totalChecklistUpdated,
-        } );
+            task: existingTask,
+            totalCheckListCreated: totalCheckListCreated
+        });
 
-    } catch ( error ) {
-        console.error( 'Error updating task:', error );
-        return res.status( 400 ).json( { message: 'Internal error', error: JSON.stringify( error ) } );
+    } catch (error) {
+        console.log(error);
+        return res.status(400).json({ message: 'Internal error', error: JSON.stringify(error) });
     }
-};
-
+}
 
 
 
