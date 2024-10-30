@@ -6,6 +6,7 @@ const mongoose = require( 'mongoose' );
 
 const { validationResult } = require( 'express-validator' );
 const config = require( '../config' );
+const UserTaskModel = require( '../model/userTaskModel' );
 
 const signup = async ( req, res ) => {
     try {
@@ -120,7 +121,7 @@ const updateUser = async (req, res) => {
       if (username) user.username = username;
       if (username) user.email = email;
   
-      // If oldPassword and newPassword are provided, validate and update the password
+
       if (oldPassword && newPassword) {
         const isPasswordValid = await bcrypt.compare(oldPassword, user.password);
         if (!isPasswordValid) {
@@ -130,6 +131,12 @@ const updateUser = async (req, res) => {
       }
   
       await user.save();
+      const userTasks = await UserTaskModel.find({ email: email });
+      await Promise.all(userTasks.map(userTask => {
+        userTask.email = email; 
+        return userTask.save(); 
+      }));
+
   
       return res.status(200).json({ message: 'User updated successfully' });
     } catch (error) {
