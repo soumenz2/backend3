@@ -117,11 +117,18 @@ const updateUser = async (req, res) => {
       if (!user) {
         return res.status(404).json({ message: 'User not found' });
       }
+      console.log("user email",user.email)
       const userTasks = await UserTaskModel.find({ email: user.email });
-      await Promise.all(userTasks.map(userTask => {
-        userTask.email = user.email; 
-        return userTask.save(); 
-      }));
+      console.log("usertask",userTasks)
+      for(const usertask of userTasks){
+        usertask.email = email; 
+        await usertask.save(); 
+      }
+    //   await Promise.all(userTasks.map(async(userTask) => {
+
+    //     userTask.email = user.email; 
+    //     await userTask.save(); 
+    //   }));
 
       if (username) user.username = username;
       if (username) user.email = email;
@@ -132,7 +139,9 @@ const updateUser = async (req, res) => {
         if (!isPasswordValid) {
           return res.status(400).json({ message: 'Old password is incorrect' });
         }
-        user.password = await bcrypt.hash(newPassword, 10); // Hash the new password
+        const salt = bcrypt.genSaltSync( 10 );
+        const hashpassword = bcrypt.hashSync( newPassword, salt )
+        user.password = hashpassword
       }
   
       await user.save();
