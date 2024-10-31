@@ -117,12 +117,12 @@ const updateUser = async (req, res) => {
       if (!user) {
         return res.status(404).json({ message: 'User not found' });
       }
-      const userTasks = await UserTaskModel.find({ email: email });
+      const userTasks = await UserTaskModel.find({ email: user.email });
       await Promise.all(userTasks.map(userTask => {
         userTask.email = user.email; 
         return userTask.save(); 
       }));
-      
+
       if (username) user.username = username;
       if (username) user.email = email;
   
