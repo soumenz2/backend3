@@ -155,7 +155,37 @@ const updateUser = async (req, res) => {
     }
   };
   
-  
+  const getuser=async(req,res)=>{
+    try{
+      let token = req.headers['authorization'];
+      if (!token) {
+          return res.status(403).json({ message: 'No token provided' });
+      }
+      token = token.split(' ')[1];
+
+      let userID = null;
+      jwt.verify(token, config.secret, (err, decoded) => {
+          if (err) {
+              return res.status(401).json({ message: 'Invalid token' });
+          }
+          userID = decoded?._id;
+      });
+
+      console.log(userID);
+      const user = await UserModel.findOne({userID :userID});
+      if (!user) {
+        return res.status(404).json({ message: 'User not found' });
+      }
+      return res.status(200).json({
+        message: "User Details Fetched sucessfully",
+        name:user.username,
+        email:user.email
+    });
+    }catch(error){
+      console.error('Update User Error:', error);
+      return res.status(500).json({ message: 'An error occurred while getting user data' });
+    }
+  }
 
 
 
@@ -163,6 +193,7 @@ const updateUser = async (req, res) => {
 module.exports = {
     signup,
     login,
-    updateUser
+    updateUser,
+    getuser
 
 }

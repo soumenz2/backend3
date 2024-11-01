@@ -6,7 +6,8 @@ const validateUser = require( '../middleware/user.validation.js' )
 const {
     signup,
     login,
-    updateUser
+    updateUser,
+    getuser
 } = require( '../controller/authController.js' )
 const {
     createTask,
@@ -17,7 +18,8 @@ const {
     updateTask,
     deleteTask,
     updateTaskStatus,
-    getTaskCounts
+    getTaskCounts,
+    
    
 
 } = require( '../controller/appController.js' )
@@ -41,6 +43,7 @@ authRouter.delete('/deleteTask', deleteTask);
 authRouter.put('/updateUser', updateUser);
 authRouter.put( '/updateTaskStatus', updateTaskStatus );
 authRouter.get( '/getTaskCounts', getTaskCounts );
+authRouter.get( '/getuser', getuser );
 
 
 
