@@ -584,9 +584,9 @@ const getTaskCounts = async (req, res) => {
         }else{
             doneCount+=1;
         }
-        if(taskDetails.priority == "high"){
+        if( taskDetails.priority == "HIGH PRIORITY"){
             highPriorityCount+=1;
-        }else if(taskDetails.priority == "moderate"){
+        }else if(taskDetails.priority == "MODERATE PRIORITY"){
             mediumPriorityCount+=1;
         }else{
             lowPriorityCount+=1;
