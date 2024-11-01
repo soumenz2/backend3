@@ -330,13 +330,13 @@ const getTask = async ( req, res ) => {
                     statusOptions = ["IN-PROGRESS", "DONE", "BACKLOG"];
                     break;
                 case "IN-PROGRESS":
-                    statusOptions = ["DONE", "BACKLOG"];
+                    statusOptions = ["DONE", "BACKLOG","TODO"];
                     break;
                 case "DONE":
-                    statusOptions = [];
+                    statusOptions = ["IN-PROGRESS", "TODO", "BACKLOG"];
                     break;
                 case "BACKLOG":
-                    statusOptions = ["TODO", "IN-PROGRESS"];
+                    statusOptions = ["TODO", "IN-PROGRESS","DONE"];
                     break;
             }
 
