@@ -542,6 +542,77 @@ const deleteTask = async (req, res) => {
         return res.status(400).json({ message: 'Internal error', error: JSON.stringify(error) });
     }
 }
+const getTaskCounts = async (req, res) => {
+    try {
+      let token = req.headers['authorization'];
+      if (!token) {
+        return res.status(403).json({ message: 'No token provided' });
+      }
+      token = token.split(' ')[1];
+  
+      let userID = null;
+      jwt.verify(token, config.secret, (err, decoded) => {
+        if (err) {
+          return res.status(401).json({ message: 'Invalid token' });
+        }
+        userID = decoded._id;
+      });
+  
+      const existingUser = await UserModel.findOne({ userID });
+      if (!existingUser) {
+        return res.status(404).json({ message: 'User not found' });
+      }
+      const taskList = await UserTaskModel.find( { email: existingUser?.email } )
+      
+  
+      // Query counts for each status and priority level
+      let backlogCount = 0;
+      let todoCount = 0;
+      let inProgressCount = 0;
+      let doneCount = 0;
+      let highPriorityCount = 0;
+      let mediumPriorityCount = 0;
+      let lowPriorityCount = 0;
+      for(task of taskList){
+        const taskDetails=await TaskModel.findOne({taskID:task?.taskID})
+        if(taskDetails.status == "TODO"){
+            todoCount+=1;
+        }else if(taskDetails.status == "IN-PROGRESS"){
+            inProgressCount+=1;
+        }else if( taskDetails?.status == "BACKLOG" ){
+            backlogCount+=1;
+        }else{
+            doneCount+=1;
+        }
+        if(taskDetails.priority == "high"){
+            highPriorityCount+=1;
+        }else if(taskDetails.priority == "moderate"){
+            mediumPriorityCount+=1;
+        }else{
+            lowPriorityCount+=1;
+        }
+        
+
+      }
+  
+      // Return the counts in response
+      return res.status(200).json({
+        message: "Task counts fetched successfully",
+        counts: {
+          backlog: backlogCount,
+          todo: todoCount,
+          inProgress: inProgressCount,
+          done: doneCount,
+          highPriority: highPriorityCount,
+          mediumPriority: mediumPriorityCount,
+          lowPriority: lowPriorityCount
+        }
+      });
+    } catch (error) {
+      console.error('Error fetching task counts:', error);
+      return res.status(500).json({ message: 'Internal server error', error: JSON.stringify(error) });
+    }
+  };
 
 
 
@@ -555,6 +626,7 @@ module.exports = {
     assignTask,
     updateTask,
     deleteTask,
-    updateTaskStatus
+    updateTaskStatus,
+    getTaskCounts
     
 }
