@@ -631,6 +631,7 @@ const getTaskCounts = async (req, res) => {
             task: {
                 taskName: taskDetails.taskName,
                 dueDate: taskDetails.dueDate,
+                priority:taskDetails.priority,
                 Checklist:checkList
             }
         } )
