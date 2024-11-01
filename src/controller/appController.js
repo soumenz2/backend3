@@ -292,26 +292,29 @@ const getTask = async ( req, res ) => {
 
             if ( req.body?.filter == "TODAY" ) {
                 taskDetails = await TaskModel.findOne( {
-                    taskID: eachTask?.taskID, dueDate: {
-                        $gte: startOfDay,
-                        $lte: endOfDay,
-                    }
+                    taskID: eachTask?.taskID,  
+                    $or: [
+                        { dueDate: { $gte: startOfDay, $lte: endOfDay } },
+                        { dueDate: null } 
+                    ]
                 } )
             } else if ( req.body?.filter == "MONTH" ) {
                 taskDetails = await TaskModel.findOne( {
-                    taskID: eachTask?.taskID, dueDate: {
-                        $gte: startOfMonth,
-                        $lte: endOfMonth,
-                    }
+                    taskID: eachTask?.taskID, 
+                    $or: [
+                        { dueDate: { $gte: startOfMonth, $lte: endOfMonth } },
+                        { dueDate: null } // Include tasks with null due date
+                    ]
                 } )
 
             } else if ( req.body?.filter == "WEEK" ) {
 
                 taskDetails = await TaskModel.findOne( {
-                    taskID: eachTask?.taskID, dueDate: {
-                        $gte: startOfWeek,
-                        $lte: endOfWeek,
-                    }
+                    taskID: eachTask?.taskID,
+                    $or: [
+                        { dueDate: { $gte: startOfWeek, $lte: endOfWeek } },
+                        { dueDate: null } // Include tasks with null due date
+                    ]
                 } )
             } else {
                 taskDetails = await TaskModel.findOne( {
@@ -615,6 +618,36 @@ const getTaskCounts = async (req, res) => {
   };
 
 
+  const getTaskByID = async ( req, res ) => {
+    try {
+       
+        const {taskID} = req.query;
+        let taskDetails = await TaskModel.findOne({taskID})
+
+        let checkList = await CheckListModel.find( { taskID: taskDetails?.taskID } )
+            
+        return res.status( 200 ).json( {
+            message: "Data Fetched Successfully",
+            task: {
+                taskName: taskDetails.taskName,
+                dueDate: taskDetails.dueDate,
+                Checklist:checkList
+            }
+        } )
+           
+        }
+   
+
+     catch ( error ) {
+        console.log( error )
+        return res.status( 400 ).json( { message: 'Internal error', error: JSON.stringify( error ) } );
+    }
+}
+
+
+
+
+
 
 
 
@@ -627,6 +660,7 @@ module.exports = {
     updateTask,
     deleteTask,
     updateTaskStatus,
-    getTaskCounts
+    getTaskCounts,
+    getTaskByID
     
 }
