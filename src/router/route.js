@@ -19,7 +19,8 @@ const {
     deleteTask,
     updateTaskStatus,
     getTaskCounts,
-    getTaskByID
+    getTaskByID,
+    updateTaskChecklist
     
    
 
@@ -42,6 +43,7 @@ authRouter.post( '/assignTask', assignTask );
 authRouter.get( '/getEmail', getEmail );
 authRouter.delete('/deleteTask', deleteTask);
 authRouter.put('/updateUser', updateUser);
+authRouter.put('/updateTaskChecklist', updateTaskChecklist);
 authRouter.put( '/updateTaskStatus', updateTaskStatus );
 authRouter.get( '/getTaskCounts', getTaskCounts );
 authRouter.get( '/getuser', getuser );

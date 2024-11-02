@@ -645,7 +645,47 @@ const getTaskCounts = async (req, res) => {
     }
 }
 
+const updateTaskChecklist = async (req, res) => {
+    try {
+        let token = req.headers['authorization'];
+        if (!token) {
+            return res.status(403).json({ message: 'No token provided' });
+        }
+        token = token.split(' ')[1];
 
+        let userID = null;
+        jwt.verify(token, config.secret, (err, decoded) => {
+            if (err) {
+                return res.status(401).json({ message: 'Invalid token' });
+            }
+            userID = decoded?._id;
+        });
+
+        console.log(userID);
+
+        
+        const existingChecklist = await CheckListModel.findOne({ checkListID: req.body.checkListID });
+        if (!existingChecklist) {
+            return res.status(404).json({ message: 'checkList not found' });
+        }
+
+       
+        existingChecklist.isDone = req.body?.newStatus  || existingChecklist.isDone;
+
+        await existingChecklist.save();
+
+  
+
+        return res.status(200).json({
+            message: "Checklist Updated",
+            task: existingChecklist,
+        });
+
+    } catch (error) {
+        console.log(error);
+        return res.status(400).json({ message: 'Internal error', error: JSON.stringify(error) });
+    }
+}
 
 
 
@@ -662,6 +702,7 @@ module.exports = {
     deleteTask,
     updateTaskStatus,
     getTaskCounts,
-    getTaskByID
+    getTaskByID,
+    updateTaskChecklist
     
 }
