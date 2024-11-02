@@ -670,7 +670,7 @@ const updateTaskChecklist = async (req, res) => {
         }
 
        
-        existingChecklist.isDone = req.body?.newStatus  || existingChecklist.isDone;
+        existingChecklist.isDone = req.body?.newStatus;
 
         await existingChecklist.save();
 
